@@ -5,6 +5,8 @@ var location: int = 0
 var evidence: Dictionary = {}
 var flags: Dictionary = {}
 var node_id := "intro"
+var skills: Dictionary = {"memory":2,"intuition":3,"conscience":2}
+var check_results: Dictionary = {}
 var heading: Label
 var story: RichTextLabel
 var choices: VBoxContainer
@@ -91,9 +93,28 @@ func show_node(id: String) -> void:
  heading.text = "ПОСЛЕДНИЙ РАССОЛ  |  " + LOCATIONS[location]
  status.text = "Гниловск, 1996     •     Улик найдено: " + str(evidence.size())
  var message: String = str(data["text"]).replace("{evidence}",", ".join(PackedStringArray(evidence.keys())))
+ if id == "reconstruction_result":
+  if not (evidence.has("Чужие часы") and evidence.has("Записка") and evidence.has("Показания Нюры")):
+   message = "Ты чувствуешь, что в воспоминаниях зияет дыра. Нужны чужие часы, записка и показания Нюры. Пока это только догадки."
+  elif not check_results.has("reconstruction"):
+   var dice_a: int = randi_range(1,6)
+   var dice_b: int = randi_range(1,6)
+   var result: int = dice_a + dice_b + int(skills["memory"])
+   check_results["reconstruction"] = result >= 10
+   if result >= 10:
+    evidence["Реконструкция ночи"] = true
+    message = "ПАМЯТЬ: 02:40. Ты вышел к заводской проходной. Директор был жив, рядом стоял Козлов. Когда погас свет, ты услышал второй голос — свой собственный. Проверка памяти: " + str(result) + "/10 — успех."
+   else:
+    evidence["Сомнение о ночи"] = true
+    message = "ПАМЯТЬ: Вспышка света и запах мокрой бумаги. Кто-то называл тебя председателем. Но лицо не вспомнить. Проверка памяти: " + str(result) + "/10 — провал, открыта альтернативная улика."
+  else:
+   message = "Ты уже восстановил столько, сколько позволяют найденные доказательства. Проверь журнал."
+ if id == "conclusion" and evidence.size() < 5:
+  message = "Пока слишком мало доказательств для серьёзного вывода. Продолжи осмотр квартиры и поговори с жителями двора."
  story.text = "[color=#d5bd85][b]" + str(data["speaker"]) + "[/b][/color]\n\n" + message
  for child in choices.get_children(): child.queue_free()
  for option in data["options"]:
+  if id == "conclusion" and evidence.size() < 5 and str(option[1]) != "courtyard": continue
   var b := Button.new()
   b.text = str(option[0])
   b.custom_minimum_size = Vector2(0,40)
@@ -102,7 +123,7 @@ func show_node(id: String) -> void:
   b.pressed.connect(func(): show_node(target))
 func save_game() -> void:
  var f := FileAccess.open("user://last_pickle_save.json", FileAccess.WRITE)
- if f: f.store_string(JSON.stringify({"version":2,"node":node_id,"evidence":evidence,"flags":flags}))
+ if f: f.store_string(JSON.stringify({"version":2,"node":node_id,"evidence":evidence,"flags":flags,"checks":check_results,"skills":skills}))
 func load_game() -> void:
  if not FileAccess.file_exists("user://last_pickle_save.json"): return
  var f := FileAccess.open("user://last_pickle_save.json",FileAccess.READ)
@@ -111,4 +132,6 @@ func load_game() -> void:
  if typeof(parsed) != TYPE_DICTIONARY: return
  evidence = parsed.get("evidence",{})
  flags = parsed.get("flags",{})
+ check_results = parsed.get("checks",{})
+ skills = parsed.get("skills",skills)
  show_node(str(parsed.get("node","intro")))
