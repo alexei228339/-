@@ -79,7 +79,7 @@ func show_node(id: String) -> void:
  if id in ["courtyard","tolik","tolik_debt","tolik_joke","tolik_folder","zina","zina_dead","zina_factory","eduard","eduard_fact","eduard_philosophy","journal"]: location = 2
  heading.text = "ПОСЛЕДНИЙ РАССОЛ  |  " + LOCATIONS[location]
  status.text = "Гниловск, 1996     •     Улик найдено: " + str(evidence.size())
- var message: String = str(data["text"]).replace("{evidence}",", ".join(evidence.keys()))
+ var message: String = str(data["text"]).replace("{evidence}",", ".join(PackedStringArray(evidence.keys())))
  story.text = "[color=#d5bd85][b]" + str(data["speaker"]) + "[/b][/color]\n\n" + message
  for child in choices.get_children(): child.queue_free()
  for option in data["options"]:
